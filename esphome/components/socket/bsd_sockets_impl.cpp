@@ -18,17 +18,19 @@ std::string format_sockaddr(const struct sockaddr_storage &storage) {
   if (storage.ss_family == AF_INET) {
     const struct sockaddr_in *addr = reinterpret_cast<const struct sockaddr_in *>(&storage);
     char buf[INET_ADDRSTRLEN];
-    const char *ret = inet_ntop(AF_INET, &addr->sin_addr, buf, sizeof(buf));
+    const char *ret = ip4addr_ntoa_r((const ip4_addr_t*)&addr->sin_addr, buf, sizeof(buf));
     if (ret == nullptr)
       return {};
     return std::string{buf};
   } else if (storage.ss_family == AF_INET6) {
-    const struct sockaddr_in6 *addr = reinterpret_cast<const struct sockaddr_in6 *>(&storage);
-    char buf[INET6_ADDRSTRLEN];
-    const char *ret = inet_ntop(AF_INET6, &addr->sin6_addr, buf, sizeof(buf));
-    if (ret == nullptr)
-      return {};
-    return std::string{buf};
+        ESP_LOGE("IP6", "  shouldn't be using ip6 anyway");
+
+    // const struct sockaddr_in6 *addr = reinterpret_cast<const struct sockaddr_in6 *>(&storage);
+    // char buf[INET6_ADDRSTRLEN];
+    // const char *ret = ip6addr_ntoa_r((const ip6_addr_t*)&addr->sin6_addr, buf, sizeof(buf));
+    // if (ret == nullptr)
+    //   return {};
+    // return std::string{buf};
   }
   return {};
 }
@@ -42,20 +44,20 @@ class BSDSocketImpl : public Socket {
     }
   }
   std::unique_ptr<Socket> accept(struct sockaddr *addr, socklen_t *addrlen) override {
-    int fd = ::accept(fd_, addr, addrlen);
+    int fd = ::lwip_accept(fd_, addr, addrlen);
     if (fd == -1)
       return {};
     return make_unique<BSDSocketImpl>(fd);
   }
-  int bind(const struct sockaddr *addr, socklen_t addrlen) override { return ::bind(fd_, addr, addrlen); }
+  int bind(const struct sockaddr *addr, socklen_t addrlen) override { return ::lwip_bind(fd_, addr, addrlen); }
   int close() override {
     int ret = ::close(fd_);
     closed_ = true;
     return ret;
   }
-  int shutdown(int how) override { return ::shutdown(fd_, how); }
+  int shutdown(int how) override { return ::lwip_shutdown(fd_, how); }
 
-  int getpeername(struct sockaddr *addr, socklen_t *addrlen) override { return ::getpeername(fd_, addr, addrlen); }
+  int getpeername(struct sockaddr *addr, socklen_t *addrlen) override { return ::lwip_getpeername(fd_, addr, addrlen); }
   std::string getpeername() override {
     struct sockaddr_storage storage;
     socklen_t len = sizeof(storage);
@@ -64,7 +66,7 @@ class BSDSocketImpl : public Socket {
       return {};
     return format_sockaddr(storage);
   }
-  int getsockname(struct sockaddr *addr, socklen_t *addrlen) override { return ::getsockname(fd_, addr, addrlen); }
+  int getsockname(struct sockaddr *addr, socklen_t *addrlen) override { return ::lwip_getsockname(fd_, addr, addrlen); }
   std::string getsockname() override {
     struct sockaddr_storage storage;
     socklen_t len = sizeof(storage);
@@ -74,13 +76,13 @@ class BSDSocketImpl : public Socket {
     return format_sockaddr(storage);
   }
   int getsockopt(int level, int optname, void *optval, socklen_t *optlen) override {
-    return ::getsockopt(fd_, level, optname, optval, optlen);
+    return ::lwip_getsockopt(fd_, level, optname, optval, optlen);
   }
   int setsockopt(int level, int optname, const void *optval, socklen_t optlen) override {
-    return ::setsockopt(fd_, level, optname, optval, optlen);
+    return ::lwip_setsockopt(fd_, level, optname, optval, optlen);
   }
-  int listen(int backlog) override { return ::listen(fd_, backlog); }
-  ssize_t read(void *buf, size_t len) override { return ::read(fd_, buf, len); }
+  int listen(int backlog) override { return ::lwip_listen(fd_, backlog); }
+  ssize_t read(void *buf, size_t len) override { return ::lwip_read(fd_, buf, len); }
   ssize_t readv(const struct iovec *iov, int iovcnt) override {
 #if defined(USE_ESP32) && ESP_IDF_VERSION_MAJOR < 4
     // esp-idf v3 doesn't have readv, emulate it
@@ -103,11 +105,11 @@ class BSDSocketImpl : public Socket {
     // ESP-IDF v4 only has symbol lwip_readv
     return ::lwip_readv(fd_, iov, iovcnt);
 #else
-    return ::readv(fd_, iov, iovcnt);
+    return ::lwip_readv(fd_, iov, iovcnt);
 #endif
   }
-  ssize_t write(const void *buf, size_t len) override { return ::write(fd_, buf, len); }
-  ssize_t send(void *buf, size_t len, int flags) { return ::send(fd_, buf, len, flags); }
+  ssize_t write(const void *buf, size_t len) override { return ::lwip_write(fd_, buf, len); }
+  ssize_t send(void *buf, size_t len, int flags) { return ::lwip_send(fd_, buf, len, flags); }
   ssize_t writev(const struct iovec *iov, int iovcnt) override {
 #if defined(USE_ESP32) && ESP_IDF_VERSION_MAJOR < 4
     // esp-idf v3 doesn't have writev, emulate it
@@ -129,19 +131,19 @@ class BSDSocketImpl : public Socket {
     return ret;
 #elif defined(USE_ESP32)
     // ESP-IDF v4 only has symbol lwip_writev
-    return ::lwip_writev(fd_, iov, iovcnt);
+    return ::lwip_lwip_writev(fd_, iov, iovcnt);
 #else
-    return ::writev(fd_, iov, iovcnt);
+    return ::lwip_writev(fd_, iov, iovcnt);
 #endif
   }
   int setblocking(bool blocking) override {
-    int fl = ::fcntl(fd_, F_GETFL, 0);
+    int fl = ::lwip_fcntl(fd_, F_GETFL, 0);
     if (blocking) {
       fl &= ~O_NONBLOCK;
     } else {
       fl |= O_NONBLOCK;
     }
-    ::fcntl(fd_, F_SETFL, fl);
+    ::lwip_fcntl(fd_, F_SETFL, fl);
     return 0;
   }
 
@@ -151,7 +153,7 @@ class BSDSocketImpl : public Socket {
 };
 
 std::unique_ptr<Socket> socket(int domain, int type, int protocol) {
-  int ret = ::socket(domain, type, protocol);
+  int ret = ::lwip_socket(domain, type, protocol);
   if (ret == -1)
     return nullptr;
   return std::unique_ptr<Socket>{new BSDSocketImpl(ret)};

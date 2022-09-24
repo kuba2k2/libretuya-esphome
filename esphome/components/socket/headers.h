@@ -110,14 +110,24 @@ struct iovec {
 #endif  // USE_SOCKET_IMPL_LWIP_TCP
 
 #ifdef USE_SOCKET_IMPL_BSD_SOCKETS
-
 #include <cstdint>
 #include <fcntl.h>
+#include <sys/types.h>
+
+#ifdef USE_LIBRETUYA
+
+#include <unistd.h>
+#define LWIP_COMPAT_SOCKETS 0
+#include <lwip/sockets.h>
+
+#else
+
 #include <sys/ioctl.h>
 #include <sys/socket.h>
-#include <sys/types.h>
 #include <sys/uio.h>
 #include <unistd.h>
+
+#endif
 
 #ifdef USE_ARDUINO
 // arduino-esp32 declares a global var called INADDR_NONE which is replaced
