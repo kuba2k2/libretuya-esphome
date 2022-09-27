@@ -18,7 +18,7 @@ std::string format_sockaddr(const struct sockaddr_storage &storage) {
   if (storage.ss_family == AF_INET) {
     const struct sockaddr_in *addr = reinterpret_cast<const struct sockaddr_in *>(&storage);
     char buf[INET_ADDRSTRLEN];
-    const char *ret = ip4addr_ntoa_r((const ip4_addr_t*)&addr->sin_addr, buf, sizeof(buf));
+    const char *ret = lwip_inet_ntop(AF_INET, &addr->sin_addr, buf, sizeof(buf));
     if (ret == nullptr)
       return {};
     return std::string{buf};
