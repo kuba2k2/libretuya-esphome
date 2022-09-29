@@ -139,9 +139,11 @@ class BSDSocketImpl : public Socket {
   int setblocking(bool blocking) override {
     int fl = ::lwip_fcntl(fd_, F_GETFL, 0);
     if (blocking) {
-      fl &= ~O_NONBLOCK;
+      // fl &= ~O_NONBLOCK;
+      fl &= ~1;
     } else {
-      fl |= O_NONBLOCK;
+      // fl |= O_NONBLOCK;
+      fl |= 1;
     }
     ::lwip_fcntl(fd_, F_SETFL, fl);
     return 0;
