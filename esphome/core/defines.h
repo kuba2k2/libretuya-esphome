@@ -94,7 +94,7 @@
 #endif
 
 #ifdef USE_LIBRETUYA
-#define USE_SOCKET_IMPL_BSD_SOCKETS
+#define USE_SOCKET_IMPL_LWIP_SOCKETS
 #endif
 
 // Disabled feature flags
