@@ -28,6 +28,8 @@ RUN \
         git=1:2.30.2-1 \
         curl=7.74.0-1.3+deb11u3 \
         openssh-client=1:8.4p1-5+deb11u1 \
+        gcc-arm-none-eabi \
+        g++-11 \
     && rm -rf \
         /tmp/* \
         /var/{cache,log}/* \
@@ -45,6 +47,14 @@ ENV \
 RUN \
     if [ "$TARGETARCH$TARGETVARIANT" = "armv7" ]; then \
         ln -s /lib/arm-linux-gnueabihf/ld-linux.so.3 /lib/ld-linux.so.3; \
+    fi
+
+# Support executing binaries compiled for 32 bit arm on arm64 systems
+RUN \
+    if [ "$TARGETARCH$TARGETVARIANT" = "arm64" ]; then \
+        dpkg --add-architecture armhf; \
+		apt-get update; \
+		apt-get install -y libc6:armhf; \
     fi
 
 RUN \
