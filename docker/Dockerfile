@@ -46,6 +46,10 @@ RUN \
         # to do this, other than using properly built toolchains...
         # See: https://unix.stackexchange.com/questions/553743/correct-way-to-add-lib-ld-linux-so-3-in-debian
         ln -s /lib/arm-linux-gnueabihf/ld-linux.so.3 /lib/ld-linux.so.3; \
+		# Install gcc-arm-linux-gnueabihf so we can compile ltchiptool
+		apt-get update; \
+		apt-get install gcc-arm-linux-gnueabihf; \
+		rm -rf /var/lib/apt/lists/*; \
     elif [ "$TARGETARCH$TARGETVARIANT" = "arm64" ]; then \
         # Support executing binaries compiled for 32 bit arm on arm64 systems
         dpkg --add-architecture armhf; \
