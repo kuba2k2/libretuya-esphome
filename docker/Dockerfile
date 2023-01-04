@@ -49,14 +49,14 @@ RUN \
     elif [ "$TARGETARCH$TARGETVARIANT" = "arm64" ]; then \
         # Support executing binaries compiled for 32 bit arm on arm64 systems
         dpkg --add-architecture armhf; \
-		apt-get update; \
-		apt-get install -y libc6:armhf; \
+        apt-get update; \
+        apt-get install -y libc6:armhf; \
         rm -rf /var/lib/apt/lists/*; \
 	elif [ "$TARGETARCH$TARGETVARIANT" = "amd64" ]; then \
         # Support executing binaries compiled for 32 bit x86 on x64 systems
         dpkg --add-architecture i386; \
-		apt-get update; \
-		apt-get install -y libc6:i386; \
+        apt-get update; \
+        apt-get install -y libc6:i386; \
         rm -rf /var/lib/apt/lists/*; \
     fi
 
