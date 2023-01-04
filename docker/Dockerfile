@@ -53,7 +53,7 @@ RUN \
         dpkg --add-architecture armhf; \
 		apt-get update; \
 		apt-get install -y libc6:armhf; \
-        rm -rf /var/lib/apt/lists/* \
+        rm -rf /var/lib/apt/lists/*; \
     fi
 
 RUN \
