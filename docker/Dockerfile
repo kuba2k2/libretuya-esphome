@@ -28,8 +28,6 @@ RUN \
         git=1:2.30.2-1 \
         curl=7.74.0-1.3+deb11u3 \
         openssh-client=1:8.4p1-5+deb11u1 \
-        gcc-arm-none-eabi \
-        g++-11 \
     && rm -rf \
         /tmp/* \
         /var/{cache,log}/* \
@@ -48,11 +46,21 @@ RUN \
         # to do this, other than using properly built toolchains...
         # See: https://unix.stackexchange.com/questions/553743/correct-way-to-add-lib-ld-linux-so-3-in-debian
         ln -s /lib/arm-linux-gnueabihf/ld-linux.so.3 /lib/ld-linux.so.3; \
+        # Install gcc-arm-linux-gnueabihf so we can compile ltchiptool
+        apt-get update; \
+        apt-get install -y gcc-arm-linux-gnueabihf; \
+        rm -rf /var/lib/apt/lists/*; \
     elif [ "$TARGETARCH$TARGETVARIANT" = "arm64" ]; then \
         # Support executing binaries compiled for 32 bit arm on arm64 systems
         dpkg --add-architecture armhf; \
-		apt-get update; \
-		apt-get install -y libc6:armhf; \
+        apt-get update; \
+        apt-get install -y libc6:armhf; \
+        rm -rf /var/lib/apt/lists/*; \
+	elif [ "$TARGETARCH$TARGETVARIANT" = "amd64" ]; then \
+        # Support executing binaries compiled for 32 bit x86 on x64 systems
+        dpkg --add-architecture i386; \
+        apt-get update; \
+        apt-get install -y libc6:i386; \
         rm -rf /var/lib/apt/lists/*; \
     fi
 
