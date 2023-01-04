@@ -41,12 +41,19 @@ ENV \
   # Store globally installed pio libs in /piolibs
   PLATFORMIO_GLOBALLIB_DIR=/piolibs
 
-# Support legacy binaries on Debian multiarch system. There is no "correct" way
-# to do this, other than using properly built toolchains...
-# See: https://unix.stackexchange.com/questions/553743/correct-way-to-add-lib-ld-linux-so-3-in-debian
+
 RUN \
     if [ "$TARGETARCH$TARGETVARIANT" = "armv7" ]; then \
+        # Support legacy binaries on Debian multiarch system. There is no "correct" way
+        # to do this, other than using properly built toolchains...
+        # See: https://unix.stackexchange.com/questions/553743/correct-way-to-add-lib-ld-linux-so-3-in-debian
         ln -s /lib/arm-linux-gnueabihf/ld-linux.so.3 /lib/ld-linux.so.3; \
+    elif [ "$TARGETARCH$TARGETVARIANT" = "arm64" ]; then \
+        # Support executing binaries compiled for 32 bit arm on arm64 systems
+        dpkg --add-architecture armhf; \
+		apt-get update; \
+		apt-get install -y libc6:armhf; \
+        rm -rf /var/lib/apt/lists/* \
     fi
 
 RUN \
