@@ -28,8 +28,6 @@ RUN \
         git=1:2.30.2-1 \
         curl=7.74.0-1.3+deb11u3 \
         openssh-client=1:8.4p1-5+deb11u1 \
-        gcc-arm-none-eabi \
-        g++-11 \
     && rm -rf \
         /tmp/* \
         /var/{cache,log}/* \
@@ -53,6 +51,12 @@ RUN \
         dpkg --add-architecture armhf; \
 		apt-get update; \
 		apt-get install -y libc6:armhf; \
+        rm -rf /var/lib/apt/lists/*; \
+	elif [ "$TARGETARCH$TARGETVARIANT" = "amd64" ]; then \
+        # Support executing binaries compiled for 32 bit x86 on x64 systems
+        dpkg --add-architecture i386; \
+		apt-get update; \
+		apt-get install -y libc6:i386; \
         rm -rf /var/lib/apt/lists/*; \
     fi
 
