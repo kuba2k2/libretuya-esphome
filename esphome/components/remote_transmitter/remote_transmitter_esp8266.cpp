@@ -38,12 +38,14 @@ void RemoteTransmitterComponent::await_target_time_() {
   if (this->target_time_ == 0) {
     this->target_time_ = current_time;
 #ifndef USE_LIBRETUYA
-   } else if (this->target_time_ > current_time) {
-     delayMicroseconds(this->target_time_ - current_time);
-   }
+  } else if (this->target_time_ > current_time) {
+    delayMicroseconds(this->target_time_ - current_time);
+  }
 #else
-  } else while (this->target_time_ > micros()) {
-    // busy loop that ensures micros is constantly called
+  } else {
+    while (this->target_time_ > micros()) {
+      // busy loop that ensures micros is constantly called
+    }
   }
 #endif
 }
