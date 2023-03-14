@@ -45,7 +45,7 @@ def _set_core_data(config):
 ARDUINO_VERSIONS = {
     "dev": (cv.Version(0, 0, 0), "https://github.com/kuba2k2/libretuya.git"),
     "latest": (cv.Version(0, 0, 0), None),
-    "recommended": (cv.Version(0, 10, 0), None),
+    "recommended": (cv.Version(0, 12, 4), None),
 }
 
 
@@ -114,6 +114,7 @@ CONFIG_SCHEMA = cv.All(
 )
 
 
+# pylint: disable=use-dict-literal
 async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
 

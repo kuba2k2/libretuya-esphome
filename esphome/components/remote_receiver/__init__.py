@@ -31,7 +31,7 @@ CONFIG_SCHEMA = remote_base.validate_triggers(
                 cv.percentage_int, cv.Range(min=0)
             ),
             cv.SplitDefault(
-                CONF_BUFFER_SIZE, esp32="10000b", esp8266="1000b"
+                CONF_BUFFER_SIZE, esp32="10000b", esp8266="1000b", libretuya="1000b"
             ): cv.validate_bytes,
             cv.Optional(
                 CONF_FILTER, default="50us"
@@ -56,7 +56,9 @@ async def to_code(config):
     for dumper in dumpers:
         cg.add(var.register_dumper(dumper))
 
-    await remote_base.build_triggers(config)
+    triggers = await remote_base.build_triggers(config)
+    for trigger in triggers:
+        cg.add(var.register_listener(trigger))
     await cg.register_component(var, config)
 
     cg.add(var.set_tolerance(config[CONF_TOLERANCE]))

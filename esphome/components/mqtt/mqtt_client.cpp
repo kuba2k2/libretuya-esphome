@@ -91,7 +91,7 @@ void MQTTClientComponent::start_dnslookup_() {
   this->dns_resolve_error_ = false;
   this->dns_resolved_ = false;
   ip_addr_t addr;
-#ifdef USE_ESP32
+#if defined(USE_ESP32) || defined(USE_LIBRETUYA)
   err_t err = dns_gethostbyname_addrtype(this->credentials_.address.c_str(), &addr,
                                          MQTTClientComponent::dns_found_callback, this, LWIP_DNS_ADDRTYPE_IPV4);
 #endif
@@ -103,10 +103,9 @@ void MQTTClientComponent::start_dnslookup_() {
     case ERR_OK: {
       // Got IP immediately
       this->dns_resolved_ = true;
-#ifdef USE_ESP32
+#if LWIP_IPV4 && LWIP_IPV6
       this->ip_ = addr.u_addr.ip4.addr;
-#endif
-#ifdef USE_ESP8266
+#else
       this->ip_ = addr.addr;
 #endif
       this->start_connect_();
@@ -159,10 +158,9 @@ void MQTTClientComponent::dns_found_callback(const char *name, const ip_addr_t *
   if (ipaddr == nullptr) {
     a_this->dns_resolve_error_ = true;
   } else {
-#ifdef USE_ESP32
+#if LWIP_IPV4 && LWIP_IPV6
     a_this->ip_ = ipaddr->u_addr.ip4.addr;
-#endif
-#ifdef USE_ESP8266
+#else
     a_this->ip_ = ipaddr->addr;
 #endif
     a_this->dns_resolved_ = true;
@@ -485,16 +483,16 @@ static bool topic_match(const char *message, const char *subscription) {
 }
 
 void MQTTClientComponent::on_message(const std::string &topic, const std::string &payload) {
-#ifdef USE_ESP8266
-  // on ESP8266, this is called in LWiP thread; some components do not like running
-  // in an ISR.
+#ifdef USE_ARDUINO
+  // on Arduino, this is called in lwIP/AsyncTCP task; some components do not like running
+  // from a different task.
   this->defer([this, topic, payload]() {
 #endif
     for (auto &subscription : this->subscriptions_) {
       if (topic_match(topic.c_str(), subscription.topic.c_str()))
         subscription.callback(topic, payload);
     }
-#ifdef USE_ESP8266
+#ifdef USE_ARDUINO
   });
 #endif
 }
