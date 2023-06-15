@@ -145,6 +145,9 @@ void HOT Logger::log_message_(int level, const char *tag, int offset) {
   if (xPortGetFreeHeapSize() < 2048)
     return;
 #endif
+#ifdef USE_HOST
+  puts(msg);
+#endif
 
   this->log_callback_.call(level, tag, msg);
 }
@@ -154,7 +157,7 @@ Logger::Logger(uint32_t baud_rate, size_t tx_buffer_size) : baud_rate_(baud_rate
   this->tx_buffer_ = new char[this->tx_buffer_size_ + 1];  // NOLINT
 }
 
-#ifndef USE_LIBRETUYA
+#ifndef USE_LIBRETINY
 void Logger::pre_setup() {
   if (this->baud_rate_ > 0) {
 #ifdef USE_ARDUINO
@@ -259,7 +262,7 @@ void Logger::pre_setup() {
 
   ESP_LOGI(TAG, "Log initialized");
 }
-#else  // USE_LIBRETUYA
+#else  // USE_LIBRETINY
 void Logger::pre_setup() {
   if (this->baud_rate_ > 0) {
     switch (this->uart_) {
@@ -298,13 +301,17 @@ void Logger::pre_setup() {
   global_logger = this;
   ESP_LOGI(TAG, "Log initialized");
 }
-#endif  // USE_LIBRETUYA
+#endif  // USE_LIBRETINY
 
 void Logger::set_baud_rate(uint32_t baud_rate) { this->baud_rate_ = baud_rate; }
 void Logger::set_log_level(const std::string &tag, int log_level) {
   this->log_levels_.push_back(LogLevelOverride{tag, log_level});
 }
+
+#if defined(USE_ESP32) || defined(USE_ESP8266) || defined(USE_RP2040) || defined(USE_LIBRETINY)
 UARTSelection Logger::get_uart() const { return this->uart_; }
+#endif
+
 void Logger::add_on_log_callback(std::function<void(int, const char *, const char *)> &&callback) {
   this->log_callback_.add(std::move(callback));
 }
@@ -332,14 +339,17 @@ const char *const UART_SELECTIONS[] = {"UART0", "UART1", "UART0_SWAP"};
 #ifdef USE_RP2040
 const char *const UART_SELECTIONS[] = {"UART0", "UART1", "USB_CDC"};
 #endif  // USE_ESP8266
-#ifdef USE_LIBRETUYA
+#ifdef USE_LIBRETINY
 const char *const UART_SELECTIONS[] = {"UART0", "SERIAL0", "SERIAL1", "SERIAL2"};
 #endif
 void Logger::dump_config() {
   ESP_LOGCONFIG(TAG, "Logger:");
   ESP_LOGCONFIG(TAG, "  Level: %s", LOG_LEVELS[ESPHOME_LOG_LEVEL]);
   ESP_LOGCONFIG(TAG, "  Log Baud Rate: %" PRIu32, this->baud_rate_);
+#if defined(USE_ESP32) || defined(USE_ESP8266) || defined(USE_RP2040) || defined(USE_LIBRETINY)
   ESP_LOGCONFIG(TAG, "  Hardware UART: %s", UART_SELECTIONS[this->uart_]);
+#endif
+
   for (auto &it : this->log_levels_) {
     ESP_LOGCONFIG(TAG, "  Level for '%s': %s", it.tag.c_str(), LOG_LEVELS[it.level]);
   }
