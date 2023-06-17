@@ -101,8 +101,7 @@ WAKEUP_PINS = {
 def validate_pin_number(value):
     if CORE.is_libretiny:
         return value
-    else:
-        valid_pins = WAKEUP_PINS.get(get_esp32_variant(), WAKEUP_PINS[VARIANT_ESP32])
+    valid_pins = WAKEUP_PINS.get(get_esp32_variant(), WAKEUP_PINS[VARIANT_ESP32])
     if value[CONF_NUMBER] not in valid_pins:
         raise cv.Invalid(
             f"Only pins {', '.join(str(x) for x in valid_pins)} support wakeup"
@@ -172,10 +171,12 @@ CONFIG_SCHEMA = cv.Schema(
         ),
         cv.Optional(CONF_SLEEP_DURATION): cv.positive_time_period_milliseconds,
         cv.Optional(CONF_WAKEUP_PIN): cv.All(
-            cv.only_on(["esp32", "libretiny"]), pins.internal_gpio_input_pin_schema, validate_pin_number
+            cv.only_on(["esp32", "libretiny"]),
+            pins.internal_gpio_input_pin_schema,
+            validate_pin_number,
         ),
         cv.Optional(CONF_WAKEUP_PIN_MODE): cv.All(
-            cv.only_on(["esp32","libretiny"]), cv.enum(WAKEUP_PIN_MODES), upper=True
+            cv.only_on(["esp32", "libretiny"]), cv.enum(WAKEUP_PIN_MODES), upper=True
         ),
         cv.Optional(CONF_ESP32_EXT1_WAKEUP): cv.All(
             cv.only_on_esp32,
