@@ -44,9 +44,6 @@ void DeepSleepComponent::setup() {
   } else {
     ESP_LOGD(TAG, "Not scheduling Deep Sleep, as no run duration is configured.");
   }
-#if defined(USE_LIBRETINY)
-  this->ltDeepSleep = new LibreTinyDeepSleep();
-#endif
 }
 void DeepSleepComponent::dump_config() {
   ESP_LOGCONFIG(TAG, "Setting up Deep Sleep...");
@@ -145,7 +142,7 @@ void DeepSleepComponent::begin_sleep(bool manual) {
 #if defined(USE_ESP32_VARIANT_ESP32C3) || defined(USE_LIBRETINY)
   if (this->sleep_duration_.has_value())
 #if defined(USE_LIBRETINY)
-    this->ltDeepSleep->enableTimerWakeup(*this->sleep_duration_);
+    lt_deep_sleep_config_timer((*this->sleep_duration_ / 1000000) & 0xFFFFFFFF);
 #else
     esp_sleep_enable_timer_wakeup(*this->sleep_duration_);
 #endif
@@ -155,7 +152,7 @@ void DeepSleepComponent::begin_sleep(bool manual) {
       level = !level;
     }
 #if defined(USE_LIBRETINY)
-    this->ltDeepSleep->enableGpioWakeup(1 << this->wakeup_pin_->get_pin(), level);
+    lt_deep_sleep_config_gpio(1 << this->wakeup_pin_->get_pin(), level);
 #else
     esp_deep_sleep_enable_gpio_wakeup(1 << this->wakeup_pin_->get_pin(),
                                       static_cast<esp_deepsleep_gpio_wake_up_mode_t>(level));
@@ -163,7 +160,7 @@ void DeepSleepComponent::begin_sleep(bool manual) {
   }
 #endif
 #if defined(USE_LIBRETINY)
-  this->ltDeepSleep->enter();
+  lt_deep_sleep_enter();
 #else
   esp_deep_sleep_start();
 #endif

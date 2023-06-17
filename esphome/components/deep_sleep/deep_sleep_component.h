@@ -9,10 +9,6 @@
 #include <esp_sleep.h>
 #endif
 
-#ifdef USE_LIBRETINY
-#include <DeepSleep.h>
-#endif
-
 #ifdef USE_TIME
 #include "esphome/components/time/real_time_clock.h"
 #endif
@@ -116,8 +112,6 @@ class DeepSleepComponent : public Component {
 #if !defined(USE_LIBRETINY)
   optional<Ext1Wakeup> ext1_wakeup_;
   optional<bool> touch_wakeup_;
-#else
-  LibreTinyDeepSleep *ltDeepSleep;
 #endif
   optional<WakeupCauseToRunDuration> wakeup_cause_to_run_duration_;
 #endif
