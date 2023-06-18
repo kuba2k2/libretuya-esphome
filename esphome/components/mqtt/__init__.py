@@ -279,6 +279,11 @@ async def to_code(config):
             None,
             "https://github.com/libretiny-eu/async-mqtt-client",
         )
+        cg.add_library(
+            "AsyncTCP",
+            None,
+            "https://github.com/libretiny-eu/AsyncTCP",
+        )
 
     cg.add_define("USE_MQTT")
     cg.add_global(mqtt_ns.using)
