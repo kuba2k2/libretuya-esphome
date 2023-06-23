@@ -142,7 +142,7 @@ void DeepSleepComponent::begin_sleep(bool manual) {
 #if defined(USE_ESP32_VARIANT_ESP32C3) || defined(USE_LIBRETINY)
   if (this->sleep_duration_.has_value())
 #if defined(USE_LIBRETINY)
-    lt_deep_sleep_config_timer((*this->sleep_duration_ / 1000000) & 0xFFFFFFFF);
+    lt_deep_sleep_config_timer((*this->sleep_duration_ / 1000) & 0xFFFFFFFF);
 #else
     esp_sleep_enable_timer_wakeup(*this->sleep_duration_);
 #endif
