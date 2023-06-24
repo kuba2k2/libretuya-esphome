@@ -36,6 +36,11 @@ struct Ext1Wakeup {
   uint64_t mask;
   esp_sleep_ext1_wakeup_mode_t wakeup_mode;
 };
+#else
+struct WakeUpPinItem {
+  InternalGPIOPin *wakeup_pin;
+  WakeupPinMode wakeup_pin_mode;
+};
 #endif
 
 struct WakeupCauseToRunDuration {
@@ -72,8 +77,10 @@ class DeepSleepComponent : public Component {
   void set_wakeup_pin_mode(WakeupPinMode wakeup_pin_mode);
 #endif
 #ifdef USE_LIBRETINY
-  void set_wakeup_pins(WakeUpPinItem *pins) { this->wakeup_pins_ = pins; }
-
+  void add_wakeup_pin(const WakeUpPinItem pin) {
+      this->wakeup_pins_.push_back(pin);
+  }
+#endif
 #if defined(USE_ESP32) || defined(USE_LIBRETINY)
 #if !defined(USE_ESP32_VARIANT_ESP32C3) && !defined(USE_LIBRETINY)
 
@@ -115,11 +122,7 @@ class DeepSleepComponent : public Component {
   optional<Ext1Wakeup> ext1_wakeup_;
   optional<bool> touch_wakeup_;
 #else
-  struct wakeUpPinItem {
-    InternalGPIOPin *wakeup_pin;
-    WakeupPinMode wakeup_pin_mode{WAKEUP_PIN_MODE_IGNORE};
-  }
-  wakeUpPinItem *wakeup_pins_;
+  std::vector<WakeUpPinItem> wakeup_pins_;
 #endif
   optional<WakeupCauseToRunDuration> wakeup_cause_to_run_duration_;
 #endif

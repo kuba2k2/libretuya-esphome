@@ -8,6 +8,7 @@ from esphome.const import (
     CONF_MINUTE,
     CONF_MODE,
     CONF_NUMBER,
+    CONF_PIN,
     CONF_PINS,
     CONF_RUN_DURATION,
     CONF_SECOND,
@@ -110,7 +111,7 @@ def validate_pin_number(value):
 
 
 def validate_config(config):
-    if !CORE.is_libretiny and CONFIG_WAKEUP_PINS in config:
+    if not CORE.is_libretiny and CONF_WAKEUP_PINS in config:
         raise cv.Invalid("Multiple wakeup pins are only supported on LibreTiny platform")
     if get_esp32_variant() == VARIANT_ESP32C3 and CONF_ESP32_EXT1_WAKEUP in config:
         raise cv.Invalid("ESP32-C3 does not support wakeup from touch.")
@@ -155,7 +156,7 @@ CONF_DEFAULT = "default"
 CONF_GPIO_WAKEUP_REASON = "gpio_wakeup_reason"
 CONF_TOUCH_WAKEUP_REASON = "touch_wakeup_reason"
 CONF_UNTIL = "until"
-CONFIG_WAKEUP_PINS = "wakeup_pins"
+CONF_WAKEUP_PINS = "wakeup_pins"
 
 WAKEUP_CAUSES_SCHEMA = cv.Schema(
     {
@@ -165,18 +166,21 @@ WAKEUP_CAUSES_SCHEMA = cv.Schema(
     }
 )
 
-WAKEUP_PINS_SCHEMA = cv.Schema(
-    {
-      cv.ensure_list(
+#WAKEUP_PINS_SCHEMA = cv.Schema(
+#    {
+WakeUpPinItem = deep_sleep_ns.struct("WakeUpPinItem")
+WAKEUP_PINS_SCHEMA = cv.ensure_list(
           cv.Schema(
-              cv.Required(CONF_PIN): pins.internal_gpio_input_pin_schema,
-              cv.Optional(CONF_WAKEUP_PIN_MODE): cv.All(
-                  cv.enum(WAKEUP_PIN_MODES), upper=True
-              ),
+              {
+                  cv.Required(CONF_PIN): pins.internal_gpio_input_pin_schema,
+                  cv.Optional(CONF_WAKEUP_PIN_MODE): cv.All(
+                      cv.enum(WAKEUP_PIN_MODES), upper=True
+                  ),
+              }
           ),
-      ),
-    }
-)
+      )
+#    }
+#)
 
 CONFIG_SCHEMA = cv.Schema(
     {
@@ -264,12 +268,12 @@ async def to_code(config):
 
     if CONF_WAKEUP_PINS in config:
         conf = config[CONF_WAKEUP_PINS]
-	list = []
         for item in conf:
-            list.add(cg.StructInitializer(
-                WakeUpPinItem, ("wakeup_pin", cg.gpio_pin_expression(item[CONF_PIN])), ("wakeup_pin_mode", item[CONF_WAKEUP_PIN_MODE])
-            )
-        cg.add(var.set_wakeup_pins(list))
+            cg.add(var.add_wakeup_pin(
+              cg.StructInitializer(
+                  WakeUpPinItem, ("wakeup_pin", await cg.gpio_pin_expression(item[CONF_PIN])), ("wakeup_pin_mode", item.get(CONF_WAKEUP_PIN_MODE,WakeupPinMode.WAKEUP_PIN_MODE_IGNORE))
+              )
+            ))
 
     cg.add_define("USE_DEEP_SLEEP")
 
