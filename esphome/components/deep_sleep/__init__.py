@@ -112,7 +112,9 @@ def validate_pin_number(value):
 
 def validate_config(config):
     if not CORE.is_libretiny and CONF_WAKEUP_PINS in config:
-        raise cv.Invalid("Multiple wakeup pins are only supported on LibreTiny platform")
+        raise cv.Invalid(
+            "Multiple wakeup pins are only supported on LibreTiny platform"
+        )
     if get_esp32_variant() == VARIANT_ESP32C3 and CONF_ESP32_EXT1_WAKEUP in config:
         raise cv.Invalid("ESP32-C3 does not support wakeup from touch.")
     if get_esp32_variant() == VARIANT_ESP32C3 and CONF_TOUCH_WAKEUP in config:
@@ -166,21 +168,17 @@ WAKEUP_CAUSES_SCHEMA = cv.Schema(
     }
 )
 
-#WAKEUP_PINS_SCHEMA = cv.Schema(
-#    {
 WakeUpPinItem = deep_sleep_ns.struct("WakeUpPinItem")
 WAKEUP_PINS_SCHEMA = cv.ensure_list(
-          cv.Schema(
-              {
-                  cv.Required(CONF_PIN): pins.internal_gpio_input_pin_schema,
-                  cv.Optional(CONF_WAKEUP_PIN_MODE): cv.All(
-                      cv.enum(WAKEUP_PIN_MODES), upper=True
-                  ),
-              }
-          ),
-      )
-#    }
-#)
+    cv.Schema(
+        {
+            cv.Required(CONF_PIN): pins.internal_gpio_input_pin_schema,
+            cv.Optional(CONF_WAKEUP_PIN_MODE): cv.All(
+                cv.enum(WAKEUP_PIN_MODES), upper=True
+            ),
+        }
+    ),
+)
 
 CONFIG_SCHEMA = cv.Schema(
     {
@@ -269,11 +267,21 @@ async def to_code(config):
     if CONF_WAKEUP_PINS in config:
         conf = config[CONF_WAKEUP_PINS]
         for item in conf:
-            cg.add(var.add_wakeup_pin(
-              cg.StructInitializer(
-                  WakeUpPinItem, ("wakeup_pin", await cg.gpio_pin_expression(item[CONF_PIN])), ("wakeup_pin_mode", item.get(CONF_WAKEUP_PIN_MODE,WakeupPinMode.WAKEUP_PIN_MODE_IGNORE))
-              )
-            ))
+            cg.add(
+                var.add_wakeup_pin(
+                    cg.StructInitializer(
+                        WakeUpPinItem,
+                        ("wakeup_pin", await cg.gpio_pin_expression(item[CONF_PIN])),
+                        (
+                            "wakeup_pin_mode",
+                            item.get(
+                                CONF_WAKEUP_PIN_MODE,
+                                WakeupPinMode.WAKEUP_PIN_MODE_IGNORE,
+                            ),
+                        ),
+                    )
+                )
+            )
 
     cg.add_define("USE_DEEP_SLEEP")
 
