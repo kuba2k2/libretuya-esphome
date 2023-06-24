@@ -77,9 +77,7 @@ class DeepSleepComponent : public Component {
   void set_wakeup_pin_mode(WakeupPinMode wakeup_pin_mode);
 #endif
 #ifdef USE_LIBRETINY
-  void add_wakeup_pin(const WakeUpPinItem pin) {
-      this->wakeup_pins_.push_back(pin);
-  }
+  void add_wakeup_pin(const WakeUpPinItem pin) { this->wakeup_pins_.push_back(pin); }
 #endif
 #if defined(USE_ESP32) || defined(USE_LIBRETINY)
 #if !defined(USE_ESP32_VARIANT_ESP32C3) && !defined(USE_LIBRETINY)
@@ -129,7 +127,7 @@ class DeepSleepComponent : public Component {
   optional<uint32_t> run_duration_;
   bool next_enter_deep_sleep_{false};
   bool prevent_{false};
-  bool prepare_pin(esphome::InternalGPIOPin*, WakeupPinMode);
+  bool prepare_pin(esphome::InternalGPIOPin *, WakeupPinMode);
 };
 
 extern bool global_has_deep_sleep;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)

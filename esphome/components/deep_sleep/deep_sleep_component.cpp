@@ -66,12 +66,11 @@ void DeepSleepComponent::dump_config() {
 #endif
 #if defined(USE_LIBRETINY)
   if (wakeup_pins_.size() > 0) {
-    for (WakeUpPinItem item: this->wakeup_pins_) {
+    for (WakeUpPinItem item : this->wakeup_pins_) {
       LOG_PIN("  Wakeup Pin: ", item.wakeup_pin);
     }
   }
 #endif
-
 }
 void DeepSleepComponent::loop() {
   if (this->next_enter_deep_sleep_)
@@ -123,12 +122,14 @@ void DeepSleepComponent::begin_sleep(bool manual) {
     return;
   }
 #if defined(USE_ESP32) || defined(USE_LIBRETINY)
-  if (!prepare_pin(this->wakeup_pin_, this->wakeup_pin_mode_)) return;
+  if (!prepare_pin(this->wakeup_pin_, this->wakeup_pin_mode_))
+    return;
 #endif
 #ifdef USE_LIBRETINY
   if (wakeup_pins_.size() > 0) {
-    for (WakeUpPinItem item: this->wakeup_pins_) {
-        if (!prepare_pin(item.wakeup_pin, item.wakeup_pin_mode)) return;
+    for (WakeUpPinItem item : this->wakeup_pins_) {
+      if (!prepare_pin(item.wakeup_pin, item.wakeup_pin_mode))
+        return;
     }
   }
 #endif
@@ -181,7 +182,7 @@ void DeepSleepComponent::begin_sleep(bool manual) {
 #if defined(USE_LIBRETINY)
   if (wakeup_pins_.size() > 0) {
     bool level;
-    for (WakeUpPinItem item: this->wakeup_pins_) {
+    for (WakeUpPinItem item : this->wakeup_pins_) {
       level = item.wakeup_pin->is_inverted();
       if (item.wakeup_pin_mode == WAKEUP_PIN_MODE_INVERT_WAKEUP && item.wakeup_pin->digital_read()) {
         level = !level;
