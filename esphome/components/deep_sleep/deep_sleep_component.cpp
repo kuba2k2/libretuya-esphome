@@ -128,7 +128,7 @@ void DeepSleepComponent::begin_sleep(bool manual) {
 #ifdef USE_LIBRETINY
   if (wakeup_pins_.size() > 0) {
     for (WakeUpPinItem item: this->wakeup_pins_) {
-	if (!prepare_pin(item.wakeup_pin, item.wakeup_pin_mode)) return;
+        if (!prepare_pin(item.wakeup_pin, item.wakeup_pin_mode)) return;
     }
   }
 #endif
