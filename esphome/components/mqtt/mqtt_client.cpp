@@ -233,7 +233,7 @@ void MQTTClientComponent::dns_found_callback(const char *name, const ip_addr_t *
 #endif
 #endif  // USE_ESP32
 #ifdef USE_ESP8266
-    a_this->ip_ = ipaddr->addr;    
+    a_this->ip_ = ipaddr->addr;
 #endif
     a_this->dns_resolved_ = true;
   }
