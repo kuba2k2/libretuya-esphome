@@ -60,7 +60,7 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(CONF_SCAN, default=True): cv.boolean,
         }
     ).extend(cv.COMPONENT_SCHEMA),
-    cv.only_on(["esp32", "esp8266", "rp2040", "rtl87xx"]),
+    cv.only_on(["esp32", "esp8266", "rp2040"]),
 )
 
 
