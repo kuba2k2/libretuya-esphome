@@ -7,7 +7,7 @@ bk72xx:
   board: cb2s
   framework:
     version: dev
-    
+
 esphome:
   name: bk72xx-test
 
