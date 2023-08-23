@@ -8,7 +8,7 @@
 namespace esphome {
 namespace ota {
 
-class ArduinoLibretinyOTABackend : public OTABackend {
+class ArduinoLibreTinyOTABackend : public OTABackend {
  public:
   OTAResponseTypes begin(size_t image_size) override;
   void set_update_md5(const char *md5) override;

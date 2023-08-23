@@ -41,7 +41,7 @@ std::unique_ptr<OTABackend> make_ota_backend() {
   return make_unique<ArduinoRP2040OTABackend>();
 #endif  // USE_RP2040
 #ifdef USE_LIBRETINY
-  return make_unique<ArduinoLibretinyOTABackend>();
+  return make_unique<ArduinoLibreTinyOTABackend>();
 #endif
 }
 

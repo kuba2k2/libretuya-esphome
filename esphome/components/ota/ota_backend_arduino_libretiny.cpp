@@ -10,7 +10,7 @@
 namespace esphome {
 namespace ota {
 
-OTAResponseTypes ArduinoLibretinyOTABackend::begin(size_t image_size) {
+OTAResponseTypes ArduinoLibreTinyOTABackend::begin(size_t image_size) {
   bool ret = Update.begin(image_size, U_FLASH);
   if (ret) {
     return OTA_RESPONSE_OK;
@@ -22,11 +22,11 @@ OTAResponseTypes ArduinoLibretinyOTABackend::begin(size_t image_size) {
   return OTA_RESPONSE_ERROR_UNKNOWN;
 }
 
-void ArduinoLibretinyOTABackend::set_update_md5(const char *md5) {
+void ArduinoLibreTinyOTABackend::set_update_md5(const char *md5) {
   // not yet implemented
 }
 
-OTAResponseTypes ArduinoLibretinyOTABackend::write(uint8_t *data, size_t len) {
+OTAResponseTypes ArduinoLibreTinyOTABackend::write(uint8_t *data, size_t len) {
   size_t written = Update.write(data, len);
   if (written != len) {
     return OTA_RESPONSE_ERROR_WRITING_FLASH;
@@ -34,13 +34,13 @@ OTAResponseTypes ArduinoLibretinyOTABackend::write(uint8_t *data, size_t len) {
   return OTA_RESPONSE_OK;
 }
 
-OTAResponseTypes ArduinoLibretinyOTABackend::end() {
+OTAResponseTypes ArduinoLibreTinyOTABackend::end() {
   if (!Update.end())
     return OTA_RESPONSE_ERROR_UPDATE_END;
   return OTA_RESPONSE_OK;
 }
 
-void ArduinoLibretinyOTABackend::abort() { Update.abort(); }
+void ArduinoLibreTinyOTABackend::abort() { Update.abort(); }
 
 }  // namespace ota
 }  // namespace esphome
