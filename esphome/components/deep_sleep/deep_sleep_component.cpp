@@ -183,7 +183,7 @@ void DeepSleepComponent::begin_sleep(bool manual) {
   if (wakeup_pins_.size() > 0) {
     bool level;
     for (WakeUpPinItem item : this->wakeup_pins_) {
-      level = item.wakeup_pin->is_inverted();
+      level = !item.wakeup_pin->is_inverted();
       if (item.wakeup_pin_mode == WAKEUP_PIN_MODE_INVERT_WAKEUP && item.wakeup_pin->digital_read()) {
         level = !level;
       }
