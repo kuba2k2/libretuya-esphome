@@ -46,7 +46,7 @@ void MDNSComponent::compile_records_() {
     platform = "RP2040";
 #endif
 #ifdef USE_LIBRETINY
-    platform = "LibreTiny";
+    platform = lt_cpu_get_model_name();
 #endif
     if (platform != nullptr) {
       service.txt_records.push_back({"platform", platform});
@@ -58,6 +58,10 @@ void MDNSComponent::compile_records_() {
     service.txt_records.push_back({"network", "wifi"});
 #elif defined(USE_ETHERNET)
     service.txt_records.push_back({"network", "ethernet"});
+#endif
+
+#ifdef USE_API_NOISE
+    service.txt_records.push_back({"api_encryption", "Noise_NNpsk0_25519_ChaChaPoly_SHA256"});
 #endif
 
 #ifdef ESPHOME_PROJECT_NAME

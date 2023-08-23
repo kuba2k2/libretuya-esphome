@@ -120,12 +120,12 @@ void HOT Logger::log_message_(int level, const char *tag, int offset) {
     if (
 #if defined(USE_ESP32_VARIANT_ESP32S2)
         uart_ == UART_SELECTION_USB_CDC
-#elif defined(USE_ESP32_VARIANT_ESP32C3)
+#elif defined(USE_ESP32_VARIANT_ESP32C3) || defined(USE_ESP32_VARIANT_ESP32C6)
         uart_ == UART_SELECTION_USB_SERIAL_JTAG
 #elif defined(USE_ESP32_VARIANT_ESP32S3)
         uart_ == UART_SELECTION_USB_CDC || uart_ == UART_SELECTION_USB_SERIAL_JTAG
 #else
-        /* DISABLES CODE */ (false)
+        /* DISABLES CODE */ (false)  // NOLINT
 #endif
     ) {
       puts(msg);
@@ -192,8 +192,8 @@ void Logger::pre_setup() {
         Serial1.setDebugOutput(ESPHOME_LOG_LEVEL >= ESPHOME_LOG_LEVEL_VERBOSE);
 #endif
         break;
-#if defined(USE_ESP32) && !defined(USE_ESP32_VARIANT_ESP32C3) && !defined(USE_ESP32_VARIANT_ESP32S2) && \
-    !defined(USE_ESP32_VARIANT_ESP32S3)
+#if defined(USE_ESP32) && !defined(USE_ESP32_VARIANT_ESP32C3) && !defined(USE_ESP32_VARIANT_ESP32C6) && \
+    !defined(USE_ESP32_VARIANT_ESP32S2) && !defined(USE_ESP32_VARIANT_ESP32S3)
       case UART_SELECTION_UART2:
         this->hw_serial_ = &Serial2;
         Serial2.begin(this->baud_rate_);
@@ -216,7 +216,8 @@ void Logger::pre_setup() {
       case UART_SELECTION_UART1:
         uart_num_ = UART_NUM_1;
         break;
-#if !defined(USE_ESP32_VARIANT_ESP32C3) && !defined(USE_ESP32_VARIANT_ESP32S2) && !defined(USE_ESP32_VARIANT_ESP32S3)
+#if !defined(USE_ESP32_VARIANT_ESP32C3) && !defined(USE_ESP32_VARIANT_ESP32C6) && \
+    !defined(USE_ESP32_VARIANT_ESP32S2) && !defined(USE_ESP32_VARIANT_ESP32S3)
       case UART_SELECTION_UART2:
         uart_num_ = UART_NUM_2;
         break;
@@ -226,11 +227,11 @@ void Logger::pre_setup() {
         uart_num_ = -1;
         break;
 #endif  // USE_ESP32_VARIANT_ESP32S2 || USE_ESP32_VARIANT_ESP32S3
-#if defined(USE_ESP32_VARIANT_ESP32C3) || defined(USE_ESP32_VARIANT_ESP32S3)
+#if defined(USE_ESP32_VARIANT_ESP32C3) || defined(USE_ESP32_VARIANT_ESP32C6) || defined(USE_ESP32_VARIANT_ESP32S3)
       case UART_SELECTION_USB_SERIAL_JTAG:
         uart_num_ = -1;
         break;
-#endif  // USE_ESP32_VARIANT_ESP32C3 || USE_ESP32_VARIANT_ESP32S3
+#endif  // USE_ESP32_VARIANT_ESP32C3 || USE_ESP32_VARIANT_ESP32C6 || USE_ESP32_VARIANT_ESP32S3
     }
     if (uart_num_ >= 0) {
       uart_config_t uart_config{};
@@ -266,31 +267,36 @@ void Logger::pre_setup() {
 void Logger::pre_setup() {
   if (this->baud_rate_ > 0) {
     switch (this->uart_) {
+#if LT_HW_UART0
       case UART_SELECTION_UART0:
-        this->hw_serial_ = &Serial;
-        Serial.begin(this->baud_rate_);
-        break;
-#ifdef PIN_SERIAL0_TX
-      case UART_SELECTION_SERIAL0:
         this->hw_serial_ = &Serial0;
         Serial0.begin(this->baud_rate_);
         break;
 #endif
-#ifdef PIN_SERIAL1_TX
-      case UART_SELECTION_SERIAL1:
+#if LT_HW_UART1
+      case UART_SELECTION_UART1:
         this->hw_serial_ = &Serial1;
         Serial1.begin(this->baud_rate_);
         break;
 #endif
-#ifdef PIN_SERIAL2_TX
-      case UART_SELECTION_SERIAL2:
+#if LT_HW_UART2
+      case UART_SELECTION_UART2:
         this->hw_serial_ = &Serial2;
         Serial2.begin(this->baud_rate_);
         break;
 #endif
+      default:
+        this->hw_serial_ = &Serial;
+        Serial.begin(this->baud_rate_);
+        if (this->uart_ != UART_SELECTION_DEFAULT) {
+          ESP_LOGW(TAG, "  The chosen logger UART port is not available on this board."
+                        "The default port was used instead.");
+        }
+        break;
     }
+
     // change lt_log() port to match default Serial
-    if (this->uart_ == UART_SELECTION_UART0) {
+    if (this->uart_ == UART_SELECTION_DEFAULT) {
       this->uart_ = (UARTSelection) (LT_UART_DEFAULT_SERIAL + 1);
       lt_log_set_port(LT_UART_DEFAULT_SERIAL);
     } else {
@@ -320,7 +326,8 @@ const char *const LOG_LEVELS[] = {"NONE", "ERROR", "WARN", "INFO", "CONFIG", "DE
 #ifdef USE_ESP32
 const char *const UART_SELECTIONS[] = {
     "UART0",           "UART1",
-#if !defined(USE_ESP32_VARIANT_ESP32C3) && !defined(USE_ESP32_VARIANT_ESP32S2) && !defined(USE_ESP32_VARIANT_ESP32S3)
+#if !defined(USE_ESP32_VARIANT_ESP32C3) && !defined(USE_ESP32_VARIANT_ESP32C6) && \
+    !defined(USE_ESP32_VARIANT_ESP32S2) && !defined(USE_ESP32_VARIANT_ESP32S3)
     "UART2",
 #endif  // !USE_ESP32_VARIANT_ESP32C3 && !USE_ESP32_VARIANT_ESP32S2 && !USE_ESP32_VARIANT_ESP32S3
 #if defined(USE_ESP_IDF)
@@ -335,13 +342,13 @@ const char *const UART_SELECTIONS[] = {
 #endif  // USE_ESP32
 #ifdef USE_ESP8266
 const char *const UART_SELECTIONS[] = {"UART0", "UART1", "UART0_SWAP"};
-#endif
+#endif  // USE_ESP8266
 #ifdef USE_RP2040
 const char *const UART_SELECTIONS[] = {"UART0", "UART1", "USB_CDC"};
-#endif  // USE_ESP8266
+#endif  // USE_RP2040
 #ifdef USE_LIBRETINY
-const char *const UART_SELECTIONS[] = {"UART0", "SERIAL0", "SERIAL1", "SERIAL2"};
-#endif
+const char *const UART_SELECTIONS[] = {"DEFAULT", "UART0", "UART1", "UART2"};
+#endif  // USE_LIBRETINY
 void Logger::dump_config() {
   ESP_LOGCONFIG(TAG, "Logger:");
   ESP_LOGCONFIG(TAG, "  Level: %s", LOG_LEVELS[ESPHOME_LOG_LEVEL]);

@@ -3,6 +3,7 @@
 #include "ota_backend_arduino_esp32.h"
 #include "ota_backend_arduino_esp8266.h"
 #include "ota_backend_arduino_rp2040.h"
+#include "ota_backend_arduino_libretiny.h"
 #include "ota_backend_esp_idf.h"
 
 #include "esphome/core/log.h"
@@ -29,7 +30,7 @@ std::unique_ptr<OTABackend> make_ota_backend() {
 #ifdef USE_ESP8266
   return make_unique<ArduinoESP8266OTABackend>();
 #endif  // USE_ESP8266
-#if defined(USE_ESP32) || defined(USE_LIBRETINY)
+#ifdef USE_ESP32
   return make_unique<ArduinoESP32OTABackend>();
 #endif  // USE_ESP32
 #endif  // USE_ARDUINO
@@ -39,6 +40,9 @@ std::unique_ptr<OTABackend> make_ota_backend() {
 #ifdef USE_RP2040
   return make_unique<ArduinoRP2040OTABackend>();
 #endif  // USE_RP2040
+#ifdef USE_LIBRETINY
+  return make_unique<ArduinoLibreTinyOTABackend>();
+#endif
 }
 
 OTAComponent::OTAComponent() { global_ota_component = this; }
@@ -357,14 +361,6 @@ void OTAComponent::handle_() {
 error:
   buf[0] = static_cast<uint8_t>(error_code);
   this->writeall_(buf, 1);
-  // send backend error code; 2 bytes, MSB first
-  int backend_errno = backend->get_backend_errno();
-  ESP_LOGW(TAG, "Backend error code: %04x", backend_errno);
-  buf[0] = static_cast<uint8_t>(backend_errno >> 8);
-  buf[1] = static_cast<uint8_t>(backend_errno & 0xFF);
-  this->writeall_(buf, 2);
-  // give receiver a chance to read the error code
-  delay(100);  // NOLINT
   this->client_->close();
   this->client_ = nullptr;
 

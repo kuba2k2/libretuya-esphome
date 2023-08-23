@@ -5,22 +5,32 @@
 #include "esphome/core/hal.h"
 #include "esphome/core/helpers.h"
 #include "esphome/core/version.h"
+#include <cinttypes>
 
 #ifdef USE_ESP32
 
 #include <esp_heap_caps.h>
 #include <esp_system.h>
 
-#if ESP_IDF_VERSION_MAJOR >= 4
+#include <esp_chip_info.h>
+#if defined(USE_ESP32_VARIANT_ESP32)
 #include <esp32/rom/rtc.h>
-#else
-#include <rom/rtc.h>
+#elif defined(USE_ESP32_VARIANT_ESP32C3)
+#include <esp32c3/rom/rtc.h>
+#elif defined(USE_ESP32_VARIANT_ESP32S2)
+#include <esp32s2/rom/rtc.h>
+#elif defined(USE_ESP32_VARIANT_ESP32S3)
+#include <esp32s3/rom/rtc.h>
 #endif
 
 #endif  // USE_ESP32
 
-#if defined(USE_ARDUINO) && !defined(USE_LIBRETINY)
+#ifdef USE_ARDUINO
+#ifdef USE_RP2040
+#include <Arduino.h>
+#elif defined(USE_ESP32) || defined(USE_ESP8266)
 #include <Esp.h>
+#endif
 #endif
 
 namespace esphome {
@@ -29,10 +39,14 @@ namespace debug {
 static const char *const TAG = "debug";
 
 static uint32_t get_free_heap() {
-#if defined(USE_ESP8266) || defined(USE_LIBRETINY)
+#if defined(USE_ESP8266)
   return ESP.getFreeHeap();  // NOLINT(readability-static-accessed-through-instance)
 #elif defined(USE_ESP32)
   return heap_caps_get_free_size(MALLOC_CAP_INTERNAL);
+#elif defined(USE_RP2040)
+  return rp2040.getFreeHeap();
+#elif defined(USE_LIBRETINY)
+  return lt_heap_get_free();
 #endif
 }
 
@@ -61,9 +75,9 @@ void DebugComponent::dump_config() {
   device_info += ESPHOME_VERSION;
 
   this->free_heap_ = get_free_heap();
-  ESP_LOGD(TAG, "Free Heap Size: %u bytes", this->free_heap_);
+  ESP_LOGD(TAG, "Free Heap Size: %" PRIu32 " bytes", this->free_heap_);
 
-#if defined(USE_ARDUINO) && !defined(USE_LIBRETINY)
+#if defined(USE_ARDUINO) && (defined(USE_ESP32) || defined(USE_ESP8266))
   const char *flash_mode;
   switch (ESP.getFlashChipMode()) {  // NOLINT(readability-static-accessed-through-instance)
     case FM_QIO:
@@ -95,19 +109,25 @@ void DebugComponent::dump_config() {
   device_info += "|Flash: " + to_string(ESP.getFlashChipSize() / 1024) +                    // NOLINT
                  "kB Speed:" + to_string(ESP.getFlashChipSpeed() / 1000000) + "MHz Mode:";  // NOLINT
   device_info += flash_mode;
-#endif  // USE_ARDUINO && !USE_LIBRETINY
+#endif  // USE_ARDUINO && (USE_ESP32 || USE_ESP8266)
 
 #ifdef USE_ESP32
   esp_chip_info_t info;
   esp_chip_info(&info);
   const char *model;
-  switch (info.model) {
-    case CHIP_ESP32:
-      model = "ESP32";
-      break;
-    default:
-      model = "UNKNOWN";
-  }
+#if defined(USE_ESP32_VARIANT_ESP32)
+  model = "ESP32";
+#elif defined(USE_ESP32_VARIANT_ESP32C3)
+  model = "ESP32-C3";
+#elif defined(USE_ESP32_VARIANT_ESP32S2)
+  model = "ESP32-S2";
+#elif defined(USE_ESP32_VARIANT_ESP32S3)
+  model = "ESP32-S3";
+#elif defined(USE_ESP32_VARIANT_ESP32H2)
+  model = "ESP32-H2";
+#else
+  model = "UNKNOWN";
+#endif
   std::string features;
   if (info.features & CHIP_FEATURE_EMB_FLASH) {
     features += "EMB_FLASH,";
@@ -149,18 +169,26 @@ void DebugComponent::dump_config() {
     case POWERON_RESET:
       reset_reason = "Power On Reset";
       break;
+#if defined(USE_ESP32_VARIANT_ESP32)
     case SW_RESET:
+#elif defined(USE_ESP32_VARIANT_ESP32C3) || defined(USE_ESP32_VARIANT_ESP32S2) || defined(USE_ESP32_VARIANT_ESP32S3)
+    case RTC_SW_SYS_RESET:
+#endif
       reset_reason = "Software Reset Digital Core";
       break;
+#if defined(USE_ESP32_VARIANT_ESP32)
     case OWDT_RESET:
       reset_reason = "Watch Dog Reset Digital Core";
       break;
+#endif
     case DEEPSLEEP_RESET:
       reset_reason = "Deep Sleep Reset Digital Core";
       break;
+#if defined(USE_ESP32_VARIANT_ESP32)
     case SDIO_RESET:
       reset_reason = "SLC Module Reset Digital Core";
       break;
+#endif
     case TG0WDT_SYS_RESET:
       reset_reason = "Timer Group 0 Watch Dog Reset Digital Core";
       break;
@@ -173,24 +201,61 @@ void DebugComponent::dump_config() {
     case INTRUSION_RESET:
       reset_reason = "Intrusion Reset CPU";
       break;
+#if defined(USE_ESP32_VARIANT_ESP32)
     case TGWDT_CPU_RESET:
       reset_reason = "Timer Group Reset CPU";
       break;
+#elif defined(USE_ESP32_VARIANT_ESP32C3) || defined(USE_ESP32_VARIANT_ESP32S2) || defined(USE_ESP32_VARIANT_ESP32S3)
+    case TG0WDT_CPU_RESET:
+      reset_reason = "Timer Group 0 Reset CPU";
+      break;
+#endif
+#if defined(USE_ESP32_VARIANT_ESP32)
     case SW_CPU_RESET:
+#elif defined(USE_ESP32_VARIANT_ESP32C3) || defined(USE_ESP32_VARIANT_ESP32S2) || defined(USE_ESP32_VARIANT_ESP32S3)
+    case RTC_SW_CPU_RESET:
+#endif
       reset_reason = "Software Reset CPU";
       break;
     case RTCWDT_CPU_RESET:
       reset_reason = "RTC Watch Dog Reset CPU";
       break;
+#if defined(USE_ESP32_VARIANT_ESP32)
     case EXT_CPU_RESET:
       reset_reason = "External CPU Reset";
       break;
+#endif
     case RTCWDT_BROWN_OUT_RESET:
       reset_reason = "Voltage Unstable Reset";
       break;
     case RTCWDT_RTC_RESET:
       reset_reason = "RTC Watch Dog Reset Digital Core And RTC Module";
       break;
+#if defined(USE_ESP32_VARIANT_ESP32C3) || defined(USE_ESP32_VARIANT_ESP32S2) || defined(USE_ESP32_VARIANT_ESP32S3)
+    case TG1WDT_CPU_RESET:
+      reset_reason = "Timer Group 1 Reset CPU";
+      break;
+    case SUPER_WDT_RESET:
+      reset_reason = "Super Watchdog Reset Digital Core And RTC Module";
+      break;
+    case GLITCH_RTC_RESET:
+      reset_reason = "Glitch Reset Digital Core And RTC Module";
+      break;
+    case EFUSE_RESET:
+      reset_reason = "eFuse Reset Digital Core";
+      break;
+#endif
+#if defined(USE_ESP32_VARIANT_ESP32C3) || defined(USE_ESP32_VARIANT_ESP32S3)
+    case USB_UART_CHIP_RESET:
+      reset_reason = "USB UART Reset Digital Core";
+      break;
+    case USB_JTAG_CHIP_RESET:
+      reset_reason = "USB JTAG Reset Digital Core";
+      break;
+    case POWER_GLITCH_RESET:
+      reset_reason = "Power Glitch Reset Digital Core And RTC Module";
+      break;
+#endif
     default:
       reset_reason = "Unknown Reset Reason";
   }
@@ -272,8 +337,13 @@ void DebugComponent::dump_config() {
   reset_reason = ESP.getResetReason().c_str();
 #endif
 
+#ifdef USE_RP2040
+  ESP_LOGD(TAG, "CPU Frequency: %u", rp2040.f_cpu());
+  device_info += "CPU Frequency: " + to_string(rp2040.f_cpu());
+#endif  // USE_RP2040
+
 #ifdef USE_LIBRETINY
-  ESP_LOGD(TAG, "LT Core Version: %s", lt_get_version());
+  ESP_LOGD(TAG, "LibreTiny Version: %s", lt_get_version());
   ESP_LOGD(TAG, "Chip: %s (%04x) @ %u MHz", lt_cpu_get_model_name(), lt_cpu_get_model(), lt_cpu_get_freq_mhz());
   ESP_LOGD(TAG, "Chip ID: 0x%06X", lt_cpu_get_mac_id());
   ESP_LOGD(TAG, "Board: %s", lt_get_board_code());
@@ -291,7 +361,7 @@ void DebugComponent::dump_config() {
   device_info += "|RAM: " + to_string(lt_ram_get_size() / 1024) + " KiB";
 
   reset_reason = lt_get_reboot_reason_name(lt_get_reboot_reason());
-#endif
+#endif  // USE_LIBRETINY
 
 #ifdef USE_TEXT_SENSOR
   if (this->device_info_ != nullptr) {
@@ -310,7 +380,7 @@ void DebugComponent::loop() {
   uint32_t new_free_heap = get_free_heap();
   if (new_free_heap < this->free_heap_ / 2) {
     this->free_heap_ = new_free_heap;
-    ESP_LOGD(TAG, "Free Heap Size: %u bytes", this->free_heap_);
+    ESP_LOGD(TAG, "Free Heap Size: %" PRIu32 " bytes", this->free_heap_);
     this->status_momentary_warning("heap", 1000);
   }
 
@@ -332,11 +402,13 @@ void DebugComponent::update() {
   }
 
   if (this->block_sensor_ != nullptr) {
-#if defined(USE_ESP8266) || defined(USE_LIBRETINY)
+#if defined(USE_ESP8266)
     // NOLINTNEXTLINE(readability-static-accessed-through-instance)
     this->block_sensor_->publish_state(ESP.getMaxFreeBlockSize());
 #elif defined(USE_ESP32)
     this->block_sensor_->publish_state(heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL));
+#elif defined(USE_LIBRETINY)
+    this->block_sensor_->publish_state(lt_heap_get_max_alloc());
 #endif
   }
 

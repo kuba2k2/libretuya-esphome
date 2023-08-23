@@ -108,6 +108,7 @@ ROOT_CONFIG_PATH = object()
 
 RESERVED_IDS = [
     # C++ keywords http://en.cppreference.com/w/cpp/keyword
+    "alarm",
     "alignas",
     "alignof",
     "and",
@@ -124,6 +125,7 @@ RESERVED_IDS = [
     "char16_t",
     "char32_t",
     "class",
+    "clock",
     "compl",
     "concept",
     "const",
@@ -1477,7 +1479,8 @@ class SplitDefault(Optional):
         esp32_arduino=vol.UNDEFINED,
         esp32_idf=vol.UNDEFINED,
         rp2040=vol.UNDEFINED,
-        libretiny=vol.UNDEFINED,
+        bk72xx=vol.UNDEFINED,
+        rtl87xx=vol.UNDEFINED,
         host=vol.UNDEFINED,
     ):
         super().__init__(key)
@@ -1489,7 +1492,8 @@ class SplitDefault(Optional):
             esp32_idf if esp32 is vol.UNDEFINED else esp32
         )
         self._rp2040_default = vol.default_factory(rp2040)
-        self._libretiny_default = vol.default_factory(libretiny)
+        self._bk72xx_default = vol.default_factory(bk72xx)
+        self._rtl87xx_default = vol.default_factory(rtl87xx)
         self._host_default = vol.default_factory(host)
 
     @property
@@ -1502,8 +1506,10 @@ class SplitDefault(Optional):
             return self._esp32_idf_default
         if CORE.is_rp2040:
             return self._rp2040_default
-        if CORE.is_libretiny and CORE.using_arduino:
-            return self._libretiny_default
+        if CORE.is_bk72xx:
+            return self._bk72xx_default
+        if CORE.is_rtl87xx:
+            return self._rtl87xx_default
         if CORE.is_host:
             return self._host_default
         raise NotImplementedError
