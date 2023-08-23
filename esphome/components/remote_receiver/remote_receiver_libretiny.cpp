@@ -8,7 +8,7 @@
 namespace esphome {
 namespace remote_receiver {
 
-static const char *const TAG = "remote_receiver.esp8266";
+static const char *const TAG = "remote_receiver.libretiny";
 
 void IRAM_ATTR HOT RemoteReceiverComponentStore::gpio_intr(RemoteReceiverComponentStore *arg) {
   const uint32_t now = micros();
