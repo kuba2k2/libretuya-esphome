@@ -9,7 +9,7 @@ namespace libretiny_pwm {
 static const char *const TAG = "libretiny.pwm";
 
 void LibreTinyPWM::write_state(float state) {
-  if (!initialized_) {
+  if (!this->initialized_) {
     ESP_LOGW(TAG, "LibreTinyPWM output hasn't been initialized yet!");
     return;
   }
@@ -40,9 +40,9 @@ void LibreTinyPWM::update_frequency(float frequency) {
   this->frequency_ = frequency;
   // force changing the frequency by removing PWM mode
   this->pin_->pin_mode(gpio::FLAG_INPUT);
-  analogWriteResolution(this->bit_depth_);        // NOLINT
-  analogWriteFrequency(frequency);  // NOLINT
-  initialized_ = true;
+  analogWriteResolution(this->bit_depth_);  // NOLINT
+  analogWriteFrequency(frequency);          // NOLINT
+  this->initialized_ = true;
   // re-apply duty
   this->write_state(this->duty_);
 }
