@@ -37,11 +37,10 @@ void LibreTinyPWM::dump_config() {
 }
 
 void LibreTinyPWM::update_frequency(float frequency) {
-  this->bit_depth_ = 10;
   this->frequency_ = frequency;
   // force changing the frequency by removing PWM mode
   this->pin_->pin_mode(gpio::FLAG_INPUT);
-  analogWriteResolution(10);        // NOLINT
+  analogWriteResolution(this->bit_depth_);        // NOLINT
   analogWriteFrequency(frequency);  // NOLINT
   initialized_ = true;
   // re-apply duty

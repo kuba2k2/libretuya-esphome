@@ -29,7 +29,7 @@ class LibreTinyPWM : public output::FloatOutput, public Component {
 
  protected:
   InternalGPIOPin *pin_;
-  uint8_t bit_depth_{};
+  uint8_t bit_depth_{10};
   float frequency_{};
   float duty_{0.0f};
   bool initialized_ = false;
