@@ -17,6 +17,8 @@
 #include <esp32/rom/rtc.h>
 #elif defined(USE_ESP32_VARIANT_ESP32C3)
 #include <esp32c3/rom/rtc.h>
+#elif defined(USE_ESP32_VARIANT_ESP32C6)
+#include <esp32c6/rom/rtc.h>
 #elif defined(USE_ESP32_VARIANT_ESP32S2)
 #include <esp32s2/rom/rtc.h>
 #elif defined(USE_ESP32_VARIANT_ESP32S3)
@@ -119,6 +121,8 @@ void DebugComponent::dump_config() {
   model = "ESP32";
 #elif defined(USE_ESP32_VARIANT_ESP32C3)
   model = "ESP32-C3";
+#elif defined(USE_ESP32_VARIANT_ESP32C6)
+  model = "ESP32-C6";
 #elif defined(USE_ESP32_VARIANT_ESP32S2)
   model = "ESP32-S2";
 #elif defined(USE_ESP32_VARIANT_ESP32S3)
@@ -144,6 +148,10 @@ void DebugComponent::dump_config() {
   if (info.features & CHIP_FEATURE_BT) {
     features += "BT,";
     info.features &= ~CHIP_FEATURE_BT;
+  }
+  if (info.features & CHIP_FEATURE_EMB_PSRAM) {
+    features += "EMB_PSRAM,";
+    info.features &= ~CHIP_FEATURE_EMB_PSRAM;
   }
   if (info.features)
     features += "Other:" + format_hex(info.features);
@@ -198,9 +206,11 @@ void DebugComponent::dump_config() {
     case RTCWDT_SYS_RESET:
       reset_reason = "RTC Watch Dog Reset Digital Core";
       break;
+#if !defined(USE_ESP32_VARIANT_ESP32C6)
     case INTRUSION_RESET:
       reset_reason = "Intrusion Reset CPU";
       break;
+#endif
 #if defined(USE_ESP32_VARIANT_ESP32)
     case TGWDT_CPU_RESET:
       reset_reason = "Timer Group Reset CPU";
@@ -423,6 +433,12 @@ void DebugComponent::update() {
     this->loop_time_sensor_->publish_state(this->max_loop_time_);
     this->max_loop_time_ = 0;
   }
+
+#ifdef USE_ESP32
+  if (this->psram_sensor_ != nullptr) {
+    this->psram_sensor_->publish_state(heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
+  }
+#endif  // USE_ESP32
 #endif  // USE_SENSOR
 }
 

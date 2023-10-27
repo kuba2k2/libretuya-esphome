@@ -81,6 +81,12 @@ def safe_print(message="", end="\n"):
             print("Cannot print line because of invalid locale!")
 
 
+def safe_input(prompt=""):
+    if prompt:
+        safe_print(prompt, end="")
+    return input()
+
+
 def shlex_quote(s):
     if not s:
         return "''"
