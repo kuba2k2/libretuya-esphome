@@ -193,12 +193,12 @@ CONFIG_SCHEMA = cv.Schema(
         ),
         cv.Optional(CONF_SLEEP_DURATION): cv.positive_time_period_milliseconds,
         cv.Optional(CONF_WAKEUP_PIN): cv.All(
-            cv.only_on(["esp32", "libretiny"]),
+            cv.only_on(["esp32", "libretiny", "bk72xx"]),
             pins.internal_gpio_input_pin_schema,
             validate_pin_number,
         ),
         cv.Optional(CONF_WAKEUP_PIN_MODE): cv.All(
-            cv.only_on(["esp32", "libretiny"]), cv.enum(WAKEUP_PIN_MODES), upper=True
+            cv.only_on(["esp32", "libretiny", "bk72xx"]), cv.enum(WAKEUP_PIN_MODES), upper=True
         ),
         cv.Optional(CONF_ESP32_EXT1_WAKEUP): cv.All(
             cv.only_on_esp32,
@@ -212,7 +212,7 @@ CONFIG_SCHEMA = cv.Schema(
             ),
         ),
         cv.Optional(CONF_WAKEUP_PINS): cv.All(
-            cv.only_on(["libretiny"]),
+            cv.only_on(["libretiny", "bk72xx"]),
             WAKEUP_PINS_SCHEMA,
         ),
         cv.Optional(CONF_TOUCH_WAKEUP): cv.All(cv.only_on_esp32, cv.boolean),
