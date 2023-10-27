@@ -54,7 +54,7 @@ void DeepSleepComponent::dump_config() {
   if (this->run_duration_.has_value()) {
     ESP_LOGCONFIG(TAG, "  Run Duration: %u ms", *this->run_duration_);
   }
-#ifdef USE_ESP32
+#if defined(USE_ESP32) || defined(USE_LIBRETINY)
   if (wakeup_pin_ != nullptr) {
     LOG_PIN("  Wakeup Pin: ", this->wakeup_pin_);
   }
@@ -62,6 +62,13 @@ void DeepSleepComponent::dump_config() {
     ESP_LOGCONFIG(TAG, "  Default Wakeup Run Duration: %u ms", this->wakeup_cause_to_run_duration_->default_cause);
     ESP_LOGCONFIG(TAG, "  Touch Wakeup Run Duration: %u ms", this->wakeup_cause_to_run_duration_->touch_cause);
     ESP_LOGCONFIG(TAG, "  GPIO Wakeup Run Duration: %u ms", this->wakeup_cause_to_run_duration_->gpio_cause);
+  }
+#endif
+#if defined(USE_LIBRETINY)
+  if (wakeup_pins_.size() > 0) {
+    for (WakeUpPinItem item : this->wakeup_pins_) {
+      LOG_PIN("  Wakeup Pin: ", item.wakeup_pin);
+    }
   }
 #endif
 }
@@ -73,14 +80,14 @@ float DeepSleepComponent::get_loop_priority() const {
   return -100.0f;  // run after everything else is ready
 }
 void DeepSleepComponent::set_sleep_duration(uint32_t time_ms) { this->sleep_duration_ = uint64_t(time_ms) * 1000; }
-#if defined(USE_ESP32)
+#if defined(USE_ESP32) || defined(USE_LIBRETINY)
 void DeepSleepComponent::set_wakeup_pin_mode(WakeupPinMode wakeup_pin_mode) {
   this->wakeup_pin_mode_ = wakeup_pin_mode;
 }
 #endif
 
-#if defined(USE_ESP32)
-#if !defined(USE_ESP32_VARIANT_ESP32C3)
+#if defined(USE_ESP32) || defined(USE_LIBRETINY)
+#if !defined(USE_ESP32_VARIANT_ESP32C3) && !defined(USE_LIBRETINY)
 
 void DeepSleepComponent::set_ext1_wakeup(Ext1Wakeup ext1_wakeup) { this->ext1_wakeup_ = ext1_wakeup; }
 
@@ -94,13 +101,7 @@ void DeepSleepComponent::set_run_duration(WakeupCauseToRunDuration wakeup_cause_
 
 #endif
 
-void DeepSleepComponent::set_run_duration(uint32_t time_ms) { this->run_duration_ = time_ms; }
-void DeepSleepComponent::begin_sleep(bool manual) {
-  if (this->prevent_ && !manual) {
-    this->next_enter_deep_sleep_ = true;
-    return;
-  }
-#ifdef USE_ESP32
+bool DeepSleepComponent::prepare_pin(InternalGPIOPin *pin, WakeupPinMode pin_mode) {
   if (this->wakeup_pin_mode_ == WAKEUP_PIN_MODE_KEEP_AWAKE && this->wakeup_pin_ != nullptr &&
       !this->sleep_duration_.has_value() && this->wakeup_pin_->digital_read()) {
     // Defer deep sleep until inactive
@@ -109,18 +110,37 @@ void DeepSleepComponent::begin_sleep(bool manual) {
       ESP_LOGW(TAG, "Waiting for pin_ to switch state to enter deep sleep...");
     }
     this->next_enter_deep_sleep_ = true;
+    return false;
+  }
+  return true;
+}
+
+void DeepSleepComponent::set_run_duration(uint32_t time_ms) { this->run_duration_ = time_ms; }
+void DeepSleepComponent::begin_sleep(bool manual) {
+  if (this->prevent_ && !manual) {
+    this->next_enter_deep_sleep_ = true;
     return;
   }
+#if defined(USE_ESP32) || defined(USE_LIBRETINY)
+  if (!prepare_pin(this->wakeup_pin_, this->wakeup_pin_mode_))
+    return;
 #endif
-
+#ifdef USE_LIBRETINY
+  if (wakeup_pins_.size() > 0) {
+    for (WakeUpPinItem item : this->wakeup_pins_) {
+      if (!prepare_pin(item.wakeup_pin, item.wakeup_pin_mode))
+        return;
+    }
+  }
+#endif
   ESP_LOGI(TAG, "Beginning Deep Sleep");
   if (this->sleep_duration_.has_value()) {
     ESP_LOGI(TAG, "Sleeping for %" PRId64 "us", *this->sleep_duration_);
   }
   App.run_safe_shutdown_hooks();
 
-#if defined(USE_ESP32)
-#if !defined(USE_ESP32_VARIANT_ESP32C3)
+#if defined(USE_ESP32) || defined(USE_LIBRETINY)
+#if !defined(USE_ESP32_VARIANT_ESP32C3) && !defined(USE_LIBRETINY)
   if (this->sleep_duration_.has_value())
     esp_sleep_enable_timer_wakeup(*this->sleep_duration_);
   if (this->wakeup_pin_ != nullptr) {
@@ -139,19 +159,41 @@ void DeepSleepComponent::begin_sleep(bool manual) {
     esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_ON);
   }
 #endif
-#ifdef USE_ESP32_VARIANT_ESP32C3
+#if defined(USE_ESP32_VARIANT_ESP32C3) || defined(USE_LIBRETINY)
   if (this->sleep_duration_.has_value())
+#if defined(USE_LIBRETINY)
+    lt_deep_sleep_config_timer((*this->sleep_duration_ / 1000) & 0xFFFFFFFF);
+#else
     esp_sleep_enable_timer_wakeup(*this->sleep_duration_);
+#endif
   if (this->wakeup_pin_ != nullptr) {
     bool level = !this->wakeup_pin_->is_inverted();
     if (this->wakeup_pin_mode_ == WAKEUP_PIN_MODE_INVERT_WAKEUP && this->wakeup_pin_->digital_read()) {
       level = !level;
     }
+#if defined(USE_LIBRETINY)
+    lt_deep_sleep_config_gpio(1 << this->wakeup_pin_->get_pin(), level);
+#else
     esp_deep_sleep_enable_gpio_wakeup(1 << this->wakeup_pin_->get_pin(),
                                       static_cast<esp_deepsleep_gpio_wake_up_mode_t>(level));
+#endif
   }
 #endif
+#if defined(USE_LIBRETINY)
+  if (wakeup_pins_.size() > 0) {
+    bool level;
+    for (WakeUpPinItem item : this->wakeup_pins_) {
+      level = !item.wakeup_pin->is_inverted();
+      if (item.wakeup_pin_mode == WAKEUP_PIN_MODE_INVERT_WAKEUP && item.wakeup_pin->digital_read()) {
+        level = !level;
+      }
+      lt_deep_sleep_config_gpio(1 << item.wakeup_pin->get_pin(), level);
+    }
+  }
+  lt_deep_sleep_enter();
+#else
   esp_deep_sleep_start();
+#endif
 #endif
 
 #ifdef USE_ESP8266
