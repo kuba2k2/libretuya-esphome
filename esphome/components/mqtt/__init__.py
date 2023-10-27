@@ -280,7 +280,7 @@ async def to_code(config):
         # https://github.com/heman/async-mqtt-client/blob/master/library.json
         cg.add_library("heman/AsyncMqttClient-esphome", "2.0.0")
     if CORE.is_libretiny:
-        cg.add_library("esphome/AsyncTCP", "2.0.1")
+        cg.add_library("esphome/AsyncTCP", "v2.0.1")
 
     cg.add_define("USE_MQTT")
     cg.add_global(mqtt_ns.using)
