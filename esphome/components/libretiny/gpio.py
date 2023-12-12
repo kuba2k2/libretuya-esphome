@@ -168,6 +168,8 @@ def validate_gpio_usage(value):
         (True, False, False, False, False),
         # OUTPUT
         (False, True, False, False, False),
+        # INPUT and OUTPUT, e.g. for i2c
+        (True, True, False, False, False),
         # INPUT_PULLUP
         (True, False, False, True, False),
         # INPUT_PULLDOWN

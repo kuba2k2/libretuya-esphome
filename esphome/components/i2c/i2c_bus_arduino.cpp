@@ -33,6 +33,14 @@ void ArduinoI2CBus::setup() {
   } else {
     wire_ = &Wire1;  // NOLINT(cppcoreguidelines-owning-memory)
   }
+#elif defined(USE_LIBRETINY)
+  wire_ = new TwoWire();  // NOLINT(cppcoreguidelines-owning-memory)
+  if (!wire_->setPins(this->sda_pin_, this->scl_pin_)) {
+    ESP_LOGE(TAG, "Invalid SDA/SCL configuration for hardware I2C!");
+    this->initialized_ = false;
+    this->mark_failed();
+    return;
+  }
 #endif
 
 #ifdef USE_RP2040

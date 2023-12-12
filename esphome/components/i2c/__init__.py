@@ -15,6 +15,8 @@ from esphome.const import (
     PLATFORM_ESP32,
     PLATFORM_ESP8266,
     PLATFORM_RP2040,
+    PLATFORM_BK72XX,
+    PLATFORM_RTL87XX,
 )
 from esphome.core import coroutine_with_priority, CORE
 
@@ -62,7 +64,15 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(CONF_SCAN, default=True): cv.boolean,
         }
     ).extend(cv.COMPONENT_SCHEMA),
-    cv.only_on([PLATFORM_ESP32, PLATFORM_ESP8266, PLATFORM_RP2040]),
+    cv.only_on(
+        [
+            PLATFORM_ESP32,
+            PLATFORM_ESP8266,
+            PLATFORM_RP2040,
+            PLATFORM_BK72XX,
+            PLATFORM_RTL87XX,
+        ]
+    ),
 )
 
 
@@ -81,7 +91,7 @@ async def to_code(config):
 
     cg.add(var.set_frequency(int(config[CONF_FREQUENCY])))
     cg.add(var.set_scan(config[CONF_SCAN]))
-    if CORE.using_arduino:
+    if CORE.using_arduino and not CORE.is_libretiny:  # Wire is bundled in LibreTiny
         cg.add_library("Wire", None)
 
 
