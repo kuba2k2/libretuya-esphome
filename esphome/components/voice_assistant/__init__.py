@@ -8,6 +8,7 @@ from esphome.const import (
     CONF_MEDIA_PLAYER,
     CONF_ON_CLIENT_CONNECTED,
     CONF_ON_CLIENT_DISCONNECTED,
+    CONF_ON_IDLE,
 )
 from esphome import automation
 from esphome.automation import register_action, register_condition
@@ -40,6 +41,8 @@ CONF_VAD_THRESHOLD = "vad_threshold"
 CONF_AUTO_GAIN = "auto_gain"
 CONF_NOISE_SUPPRESSION_LEVEL = "noise_suppression_level"
 CONF_VOLUME_MULTIPLIER = "volume_multiplier"
+
+CONF_WAKE_WORD = "wake_word"
 
 
 voice_assistant_ns = cg.esphome_ns.namespace("voice_assistant")
@@ -127,6 +130,7 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(CONF_ON_TTS_STREAM_END): automation.validate_automation(
                 single=True
             ),
+            cv.Optional(CONF_ON_IDLE): automation.validate_automation(single=True),
         }
     ).extend(cv.COMPONENT_SCHEMA),
     tts_stream_validate,
@@ -259,6 +263,13 @@ async def to_code(config):
             config[CONF_ON_TTS_STREAM_END],
         )
 
+    if CONF_ON_IDLE in config:
+        await automation.build_automation(
+            var.get_idle_trigger(),
+            [],
+            config[CONF_ON_IDLE],
+        )
+
     cg.add_define("USE_VOICE_ASSISTANT")
 
 
@@ -276,6 +287,7 @@ VOICE_ASSISTANT_ACTION_SCHEMA = cv.Schema({cv.GenerateID(): cv.use_id(VoiceAssis
     VOICE_ASSISTANT_ACTION_SCHEMA.extend(
         {
             cv.Optional(CONF_SILENCE_DETECTION, default=True): cv.boolean,
+            cv.Optional(CONF_WAKE_WORD): cv.templatable(cv.string),
         }
     ),
 )
@@ -284,6 +296,9 @@ async def voice_assistant_listen_to_code(config, action_id, template_arg, args):
     await cg.register_parented(var, config[CONF_ID])
     if CONF_SILENCE_DETECTION in config:
         cg.add(var.set_silence_detection(config[CONF_SILENCE_DETECTION]))
+    if wake_word := config.get(CONF_WAKE_WORD):
+        templ = await cg.templatable(wake_word, args, cg.std_string)
+        cg.add(var.set_wake_word(templ))
     return var
 
 
