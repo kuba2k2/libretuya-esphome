@@ -311,8 +311,6 @@ async def to_code(config):
     if CORE.is_esp8266 or CORE.is_libretiny:
         # https://github.com/heman/async-mqtt-client/blob/master/library.json
         cg.add_library("heman/AsyncMqttClient-esphome", "2.0.0")
-    if CORE.is_libretiny:
-        cg.add_library("esphome/AsyncTCP-esphome", "2.0.1")
 
     cg.add_define("USE_MQTT")
     cg.add_global(mqtt_ns.using)
